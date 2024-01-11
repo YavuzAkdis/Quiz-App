@@ -1,50 +1,55 @@
 const quiz = new Quiz(sorular);
 const ui = new UI();
 
+// Start Butonu
 ui.btn_start.addEventListener("click", function () {
   document.querySelector(".quiz-box").classList.add("active");
-  soruGöster(quiz.soruGetir());
-  soruSayisiniGöster(quiz.soruIndex + 1, quiz.sorular.length);
+  startTimer(10);
+  startTimerLine();
+  ui.soruGöster(quiz.soruGetir());
+  ui.soruSayisiniGöster(quiz.soruIndex + 1, quiz.sorular.length);
   ui.btn_next.classList.remove("show");
 });
 
+// Sonraki soru Butonu
 ui.btn_next.addEventListener("click", function () {
-  if (quiz.sorular.lenght != quiz.soruIndex + 1) {
+  if (quiz.sorular.length != quiz.soruIndex + 1) {
     quiz.soruIndex += 1;
-    soruGöster(quiz.soruGetir());
-    soruSayisiniGöster(quiz.soruIndex + 1, quiz.sorular.length);
+    clearInterval(counter);
+    clearInterval(counterLine);
+    startTimer(10);
+    startTimerLine();
+    ui.soruGöster(quiz.soruGetir());
+    ui.soruSayisiniGöster(quiz.soruIndex + 1, quiz.sorular.length);
     ui.btn_next.classList.remove("show");
   } else {
-    console.log("quiz bitti.");
+    clearInterval(counter);
+    document.querySelector(".quiz-box").classList.remove("active");
+    ui.score_box.classList.add("active");
+    ui.skoruGoster(quiz.sorular.length, quiz.dogruCevapSayisi);
   }
 });
 
-function soruGöster(soru) {
-  let question = `<span>${soru.soruMetni}</span>`;
-  let options = "";
+ui.btn_quit.addEventListener("click", function () {
+  window.location.reload(); /* Quiz yeniden başlatmak için sayfayı tekrar yükler*/
+});
 
-  for (let cevap in soru.cevapSecenekleri) {
-    options += `
-        <div class="option">
-            <span><b>${cevap}</b>: ${soru.cevapSecenekleri[cevap]}</span>
-        </div>
-      `;
-  }
+ui.btn_replay.addEventListener("click", function () {
+  quiz.soruIndex = 0;
+  quiz.dogruCevapSayisi = 0;
+  ui.btn_start.click();
+  ui.score_box.classList.remove("active");
+});
 
-  document.querySelector(".question_text").innerHTML = question;
-  ui.option_list.innerHTML = options;
-
-  const option = ui.option_list.querySelectorAll(".option");
-  for (let opt of option) {
-    opt.setAttribute("onclick", "optionSelected(this)");
-  }
-}
-
+// Şeçenekler
 function optionSelected(option) {
+  clearInterval(counter);
+  clearInterval(counterLine);
   let cevap = option.querySelector("span b").textContent;
   let soru = quiz.soruGetir();
 
   if (soru.cevabiKontrol(cevap)) {
+    quiz.dogruCevapSayisi += 1;
     option.classList.add("correct");
     option.insertAdjacentHTML("beforeend", ui.correctIcon);
   } else {
@@ -58,7 +63,43 @@ function optionSelected(option) {
   ui.btn_next.classList.add("show");
 }
 
-function soruSayisiniGöster(soruSirasi, toplamSoru) {
-  let tag = `<span class="badge bg-warning">${soruSirasi} / ${toplamSoru} </span>`;
-  document.querySelector(".quiz-box .question_index").innerHTML = tag;
+// Geri sayım animasyonu
+let counter;
+function startTimer(time) {
+  counter = setInterval(timer, 1000);
+
+  function timer() {
+    ui.time_second.textContent = time;
+    time--;
+
+    if (time < 0) {
+      clearInterval(counter);
+      ui.time_text.textContent = "Süre Bitti";
+      let cevap = quiz.soruGetir().dogruCevap;
+
+      for (let option of ui.option_list.children) {
+        if (option.querySelector("span b").textContent == cevap) {
+          option.classList.add("correct");
+          option.insertAdjacentHTML("beforeend", ui.correctIcon);
+        }
+        option.classList.add("disabled");
+      }
+      ui.btn_next.classList.add("show");
+    }
+  }
+}
+
+// Süre çubuk animasyonu
+let counterLine;
+function startTimerLine() {
+  let line_width = 0;
+  counterLine = setInterval(timer, 20);
+
+  function timer() {
+    line_width += 1;
+    ui.time_line.style.width = line_width + "px";
+    if (line_width > 549) {
+      clearInterval(counterLine);
+    }
+  }
 }
